@@ -1,13 +1,15 @@
 from flask import Flask
 import pymysql
+from db_config import db
+from db_config.decorator import set_write_db, set_read_db
+from db_config.sqlalchemy_config import Config
+
 pymysql.install_as_MySQLdb()
 
 # 创建app应用
-from flask_sqlalchemy import SQLAlchemy
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:mysql@127.0.0.1:3306/test29'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
+app.config.from_object(Config)
+
 # 初始化数据库连接对象
 db.init_app(app)
 
@@ -20,9 +22,10 @@ class User(db.Model):
 
 
 @app.route('/')
+@set_write_db
 def index():
     """增加数据"""
-    user1 = User(name='laowang', age=20)
+    user1 = User(name='xiao', age=20)
     db.session.add(user1)
     db.session.commit()
 
@@ -30,14 +33,18 @@ def index():
 
 
 @app.route('/demo1')
+@set_read_db
 def demo1():
-    # 查询数据
-    users = User.query.all()
-    print(users)
+    try:
+        # 查询数据
+        users = User.query.all()
+        print(users)
+    except Exception as e:
+        return "查询错误:{}".format(e)
     return 'demo1'
 
 
 if __name__ == '__main__':
     # db.drop_all()  # 删除所有继承自db.Model的表
-    db.create_all()  # 创建所有继承自db.Model的表
+    # db.create_all()  # 创建所有继承自db.Model的表
     app.run(debug=True)
